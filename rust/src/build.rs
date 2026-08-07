@@ -23,8 +23,12 @@ pub fn ccmd() -> cc::Build {
 
     match target.as_str() {
         "cuda" => {
-            fn is_cuda_flag_supported(nvcc: &cc::Build, flag: &str) -> bool {
-                let out = nvcc
+            // Probe on a fresh Build so prior -gencode/-t0 flags cannot
+            // false-negative arch support (seen with CUDA 12.4 + sm_80).
+            fn is_cuda_flag_supported(flag: &str) -> bool {
+                let mut probe = cc::Build::new();
+                probe.cuda(true);
+                let out = probe
                     .get_compiler()
                     .to_command()
                     .arg(flag)
@@ -44,18 +48,18 @@ pub fn ccmd() -> cc::Build {
                 nvcc.flag("-gencode")
                     .flag("arch=compute_80,code=\"compute_80,sm_80\"")
                     .flag("-t0");
-                if is_cuda_flag_supported(&nvcc, "-arch=sm_70") {
+                if is_cuda_flag_supported("-arch=sm_70") {
                     nvcc.flag("-gencode")
                         .flag("arch=compute_70,code=sm_70");
-                } else if is_cuda_flag_supported(&nvcc, "-arch=sm_75") {
+                } else if is_cuda_flag_supported("-arch=sm_75") {
                     nvcc.flag("-gencode")
                         .flag("arch=compute_75,code=sm_75");
                 }
-                if is_cuda_flag_supported(&nvcc, "-arch=sm_100") {
+                if is_cuda_flag_supported("-arch=sm_100") {
                     nvcc.flag("-gencode")
                         .flag("arch=compute_100,code=compute_100");
                 }
-                if is_cuda_flag_supported(&nvcc, "-arch=sm_120") {
+                if is_cuda_flag_supported("-arch=sm_120") {
                     nvcc.flag("-gencode")
                         .flag("arch=compute_120,code=sm_120");
                 }
